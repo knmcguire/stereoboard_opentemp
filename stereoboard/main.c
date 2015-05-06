@@ -20,6 +20,7 @@
 
 #include "window_detection.h"
 #include "filter_color.h"
+#include "optic_flow.h"
 #include "entropy_patches.h"
 #include "usbd_usr.h"
 
@@ -182,8 +183,8 @@ int main(void)
   char comm_buff[128] = " --- Stereo Camera --- \n\r";
   usart_tx_ringbuffer_push((uint8_t *)&comm_buff, strlen(comm_buff));
 
-  uint8_t disparity_image[FULL_IMAGE_SIZE / 2] = {};
-
+  //uint8_t disparity_image[FULL_IMAGE_SIZE/2] = {};
+  //uint8_t previous_image[FULL_IMAGE_SIZE] = {};
 
   uint32_t image_width = IMAGE_WIDTH;
   uint32_t image_height = IMAGE_HEIGHT;
@@ -196,6 +197,13 @@ int main(void)
    *******************/
 
   //uint8_t modeswitcher = 0; // local alternater switch between stereo and color mode
+
+  uint32_t i = 0;
+  uint32_t max_flow = 10;
+  uint8_t min_y = 20;
+  uint8_t max_y = 76;
+  int *divergence;
+  int *displacement;
 
 
   /***********
@@ -215,8 +223,18 @@ int main(void)
 #endif
     if (cameraMode == COLOR) {
       cameraMode = STEREO;
-      detect_roof(current_image_buffer2, filtered_image, image_width, image_height);
+      //detect_roof(current_image_buffer2, filtered_image, image_width, image_height);
       led_clear();
+      if (frame_processed > 1) {
+        optic_flow_horizontal(filtered_image, current_image_buffer2, IMAGE_WIDTH, IMAGE_HEIGHT, max_flow, min_y, max_y,
+                              divergence, displacement);
+      }
+
+      // copy current into previous image:
+      for (i = 0; i < FULL_IMAGE_SIZE; i++) {
+        filtered_image[i] = current_image_buffer2[i];
+      }
+
 #if(SEND_FILTER)
       SendImage(filtered_image, cameraMode);
 #endif
@@ -225,10 +243,10 @@ int main(void)
 #endif
     } else { // stereo vision
       cameraMode = COLOR;
-      detect_objects(current_image_buffer1, disparity_image, image_width, image_height);
+      //detect_objects(current_image_buffer1, disparity_image, image_width, image_height);
       led_set();
 #if (SEND_DISPARITY_MAP)
-      SendDisparityMap(disparity_image);
+      //  SendDisparityMap(disparity_image);
 #endif
 #if (SEND_IMAGE_STEREO)
       SendImage(current_image_buffer1, cameraMode);

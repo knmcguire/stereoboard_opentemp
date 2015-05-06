@@ -21,13 +21,13 @@ uint32_t colorfilt_uyvy(struct img_struct *input, struct img_struct *output, uin
   uint8_t *dest = output->buf;
 
 
-  int linesubsampling = 1; // if 1, disabled
+  int linesubsampling = 1;
 
   for (int y = 0; y < output->h - (linesubsampling - 1); y += linesubsampling) {
     for (int x = 0; x < output->w << 1 ; x += 4) { // 2 bytes per pixel, 4 bytes per uyvy "sample"
 
       // Color Check:
-      if ((source[1] >= y_m)
+      if ((source[1] >= y_m)      //TODO: currently Y is unused, can be removed?
           && (source[1] <= y_M)
           && (source[0] >= u_m)
           && (source[0] <= u_M)
@@ -36,8 +36,8 @@ uint32_t colorfilt_uyvy(struct img_struct *input, struct img_struct *output, uin
          ) {
         cnt ++; // total count not really used anymore
 
-        //measure counts for left half and right half seperatedly, used to detect the roof color
-        if (y < 25) { //hard coded = not so nice. Also, not very efficient. But works...
+        //measure counts for left half and right half seperatedly
+        if (y > 76) { //hard coded = not so nice. Also, not very efficient. But works...
           if (x < 127) {
             results[0]++;
           } else {

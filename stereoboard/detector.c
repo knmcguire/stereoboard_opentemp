@@ -34,13 +34,11 @@ const uint32_t disparities_high = 0;
 
 
 /* perfect blue detector */
-uint8_t min_U = 130;
-uint8_t min_V = 100;
-uint8_t max_U = 200;
-uint8_t max_V = 140;
+uint8_t min_U = 128;
+uint8_t min_V = 0;
+uint8_t max_U = 255;
+uint8_t max_V = 127;
 
-uint8_t max_Y = 200;
-uint8_t min_Y = 140;
 
 
 void detect_roof(uint8_t *in, uint8_t *out, uint32_t image_width, uint32_t image_height)
@@ -60,7 +58,7 @@ void detect_roof(uint8_t *in, uint8_t *out, uint32_t image_width, uint32_t image
 
   uint32_t results[2] = {};
 
-  uint32_t cnt =  colorfilt_uyvy(&input, &output, min_Y, max_Y, min_U, max_U, min_V, max_V, results);
+  uint32_t cnt =  colorfilt_uyvy(&input, &output, 0, 255, min_U, max_U, min_V, max_V, results);
 
 
   results[0] = results[0] >> 6;
@@ -101,7 +99,7 @@ void detect_roof(uint8_t *in, uint8_t *out, uint32_t image_width, uint32_t image
 #endif
 #if (SEND_COMMANDS_HUMAN ==1 )
   char str[64];
-  int len = sprintf(str, "Left: %u, Right %u, Total %u;\n\r", results[0], results[1], cnt);
+  int len = sprintf(str, "Left: %u, Right %u, Total %u, Command:%u;\n\r", results[0], results[1], cnt, command);
   print_string(str, len);
 #endif
 
@@ -139,7 +137,7 @@ void detect_objects(uint8_t *in, uint8_t *out, uint32_t image_width, uint32_t im
   data[3] = disp_cnt;
   data[4] = 255;
   data[5] = disp_cnt;
-  print_string(data, 6);
+  //print_string(data,6);
 #endif
 #if (SEND_COMMANDS_HUMAN ==1 )
   char str[64];

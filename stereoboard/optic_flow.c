@@ -19,6 +19,8 @@
 #define RANSAC_ITERATIONS 20
 #define RESOLUTION 100
 
+char str[64];
+
 void optic_flow_horizontal(uint8_t *prev_im, uint8_t *curr_im, uint32_t image_width, uint32_t image_height,
                            uint32_t max_flow, uint8_t min_y, uint8_t max_y, int *divergence, int *displacement)
 {
@@ -28,8 +30,8 @@ void optic_flow_horizontal(uint8_t *prev_im, uint8_t *curr_im, uint32_t image_wi
   * 3) Fit linear model
   */
 
-  uint8_t histogram1[IM_WIDTH];
-  uint8_t histogram2[IM_WIDTH];
+  uint32_t histogram1[IM_WIDTH];
+  uint32_t histogram2[IM_WIDTH];
   uint32_t flow_error[IM_WIDTH]; // maximal max flow is half the image
   uint8_t avg_h1;
   uint8_t avg_h2;
@@ -39,35 +41,42 @@ void optic_flow_horizontal(uint8_t *prev_im, uint8_t *curr_im, uint32_t image_wi
   avg_h1 = createHistogramSobel(histogram1, prev_im, image_width, image_height, min_y, max_y);
   avg_h2 = createHistogramSobel(histogram2, curr_im, image_width, image_height, min_y, max_y);
 
-  // 2) Histogram matching
-  // Match all histogram entries that are larger than average
+  int l = sprintf(str, "avg %d, %d\r\n", avg_h1, avg_h2);
+  print_string(str, l);
 
-  uint32_t X[IM_WIDTH];
-  int FLOW[IM_WIDTH];
-  uint32_t n_entries = 0;
 
-  for (x = max_flow; x < image_width - max_flow; x++) {
-    // only start matching if it is a peak:
-    if (histogram1[x] > avg_h1) {
-      // determine errors for different flows (now only integer)
-      for (f = -max_flow; f < max_flow; f++) {
-        flow_error[f + max_flow] = abs(histogram1[x] - histogram2[x + f]);
+  /*  // 2) Histogram matching
+    // Match all histogram entries that are larger than average
+
+    uint32_t X[IM_WIDTH];
+    int FLOW[IM_WIDTH];
+    uint32_t n_entries = 0;
+
+    for(x = max_flow; x < image_width - max_flow; x++)
+    {
+      // only start matching if it is a peak:
+      if(histogram1[x] > avg_h1)
+      {
+        // determine errors for different flows (now only integer)
+        for(f = -max_flow; f < max_flow; f++)
+        {
+          flow_error[f+max_flow] = abs(histogram1[x] - histogram2[x+f]);
+        }
+
+        // search minimum:
+        flow_ind = getMinimum(flow_error, 2*max_flow);
+
+        // store the point plus its flow:
+        X[n_entries] = x;
+        FLOW[n_entries] = (int) flow_ind - max_flow;
+        n_entries++;
       }
-
-      // search minimum:
-      flow_ind = getMinimum(flow_error, 2 * max_flow);
-
-      // store the point plus its flow:
-      X[n_entries] = x;
-      FLOW[n_entries] = (int) flow_ind - max_flow;
-      n_entries++;
     }
-  }
 
-  // 3) Fit linear model
-  fitLinearModel(X, FLOW, n_entries, divergence, displacement);
+    // 3) Fit linear model
+    fitLinearModel(X, FLOW, n_entries, divergence, displacement);
 
-
+  */
 }
 
 void fitLinearModel(uint32_t *X, int *FLOW, uint32_t n_entries, int *divergence, int *displacement)
@@ -131,12 +140,13 @@ uint32_t getMinimum(uint32_t *flow_error, uint32_t max_ind)
   return min_ind;
 }
 
-uint8_t createHistogramSobel(uint8_t *histogram, uint8_t *im, uint32_t image_width, uint32_t image_height,
+uint8_t createHistogramSobel(uint32_t *histogram, uint8_t *im, uint32_t image_width, uint32_t image_height,
                              uint8_t min_y, uint8_t max_y)
 {
-  uint8_t Sobel[3][3] = { { -1, 0, 1}, { -2, 0, 2}, { -1, 0, 1} };
-  uint32_t sobel_threshold = 15;
-  uint32_t x, y, r, c;
+  int32_t Sobel[3][3] = { { -1, 0, 1}, { -2, 0, 2}, { -1, 0, 1} };
+  uint32_t sobel_threshold = 0;
+  uint32_t x, y;
+  int8_t r, c;
   int32_t sobel;
   uint32_t avg_hist = 0;
 
@@ -146,21 +156,30 @@ uint8_t createHistogramSobel(uint8_t *histogram, uint8_t *im, uint32_t image_wid
   // make histogram:
   for (x = 1; x < image_width - 1; x++) {
     histogram[x] = 0;
-
+    //print_byte( 'a');
     for (y = min_y + 1; y < max_y - 1; y++) {
+      //print_byte( 'b');
       // Convolution:
       sobel = 0;
       for (r = -1; r <= 1; r++) {
         for (c = -1; c <= 1; c++) {
-          sobel += Sobel[r + 1][c + 1] * (int) im[(x + r) * 2 + (y + c) * image_width * 2];
+          //print_byte( 'c');
+          sobel += Sobel[r + 1][c + 1] * (int32_t) im[y + c, (x + r) * 2 + 1];
+
+          int l = sprintf(str, "sobel = %d \r\n",  Sobel[r + 1][c + 1] * (int32_t) im[y + c, (x + r) * 2 + 1]); // im[y, x*2+1]
+          print_string(str, l);
+
+          //im[(x+r)*2 + (y+c)*image_width*2];
         }
       }
+
       sobel = abs(sobel);
+
+
       if (sobel > sobel_threshold) {
         histogram[x] += sobel;
       }
     }
-
     avg_hist += histogram[x];
   }
 

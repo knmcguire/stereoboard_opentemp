@@ -309,6 +309,7 @@ void dma2_stream1_isr(void)
   // }
 
 
+  // Switch color / stereo:
   if (DMA_GetCurrentMemoryTarget(DMA2_Stream1) == DMA_Memory_0) {
     camera_cpld_stereo_pixmux();
     current_image_buffer2 = dcmi_image_buffer_8bit_2;
@@ -316,6 +317,16 @@ void dma2_stream1_isr(void)
     camera_cpld_stereo_left();
     current_image_buffer1 = dcmi_image_buffer_8bit_1;
   }
+
+  /*if (DMA_GetCurrentMemoryTarget(DMA2_Stream1) == DMA_Memory_0)
+  {
+    current_image_buffer2 = dcmi_image_buffer_8bit_2;
+  }
+  else
+  {
+    current_image_buffer1 = dcmi_image_buffer_8bit_1;
+  }*/
+
 #else
   // 176 x 144
   current_image_buffer1 = dcmi_image_buffer_8bit_1;

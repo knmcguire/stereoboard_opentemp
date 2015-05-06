@@ -83,21 +83,9 @@ void camera_tcm8230_i2c_init(void)
 #define   EXP_LONG        0x10
 
 
-#define TCM_AWB 0x0A // auto white balance
+#define TCM_AWB 0x0A
 #define TCM_AWB_AUTO 0x00
-#define TCM_AWB_MANUAL 255
-
-#define TCM_ALC 0x05 // auto luminance control
-#define TCM_ALC_AUTO 0
-#define TCM_ALC_MANUAL 128
-
-#define TCM_ALCL 0x09 // auto luminance control level
-
-#define TCM_VHUE 0x13
-#define TCM_UHUE 0x14
-
-#define TCM_SATU 0x18 // saturation (6 bits)
-
+#define TCM_AWB_MANUAL 0x01
 
 uint8_t tcm8230_WriteReg(uint8_t Addr, uint8_t Data);
 uint8_t tcm8230_ReadReg(uint8_t Addr, uint8_t *reply);
@@ -114,18 +102,7 @@ void camera_tcm8230_config(void)
 #endif
   tcm8230_WriteReg(TCM_SWC, TCM_SWC_VAL);
   tcm8230_WriteReg(TCM_EXP, EXP_DEFAULT | EXP_SHORT);
-
-  tcm8230_WriteReg(TCM_AWB,
-                   TCM_AWB_MANUAL); // in combination with settings high saturation, seems to fix the color changing problem (making it gray when large bodies of hard color)
-  tcm8230_WriteReg(TCM_SATU, 255);
-
-  //tcm8230_WriteReg(TCM_ALC, TCM_ALC_MANUAL);
-  //tcm8230_WriteReg(TCM_ALCL, 50);
-  //tcm8230_WriteReg(TCM_VHUE, 255);
-  //tcm8230_WriteReg(TCM_UHUE, 255);
-
-
-
+  tcm8230_WriteReg(TCM_AWB, TCM_AWB_MANUAL);
 }
 
 void camera_tcm8230_read(void)

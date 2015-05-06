@@ -15,10 +15,10 @@
 // uncomment for communication with the microcrontroller, this is for sending images:
 
 
-#define SEND_COMMANDS 0     //commands to ppz
+#define SEND_COMMANDS 1     //commands to ppz
 #define SEND_COMMANDS_HUMAN 0 //same commands, but readable for humans in a terminal
 #define SEND_TIMING 0     //send timing information (in human readable format)
-#define SEND_IMAGE_STEREO 1   // to send the raw stereo image
+#define SEND_IMAGE_STEREO 0   // to send the raw stereo image
 #define SEND_IMAGE_COLOR 0    // to send the raw UYVY color image
 #define SEND_FILTER 0     // to send the processed color image result (UYUY filtered color image)
 #define SEND_DISPARITY_MAP 0  // to send the processed stereo image result (grayscale disparity map)
