@@ -3,7 +3,7 @@
 
 
 #include "dcmi.h"
-
+#include "cpld.h"
 
 void camera_reset_init()
 {
@@ -267,7 +267,11 @@ void camera_dma_it_init()
   DMA_ITConfig(DMA2_Stream1, DMA_IT_TC, ENABLE); // transfer complete interrupt
 }
 
-uint8_t *current_image_buffer = dcmi_image_buffer_8bit_1;
+uint8_t *current_image_buffer1 = dcmi_image_buffer_8bit_1;
+uint8_t *current_image_buffer2 = dcmi_image_buffer_8bit_2;
+
+uint8_t currentCameramode;
+uint8_t cameraMode;
 
 void dma2_stream1_isr(void)
 {
@@ -282,30 +286,39 @@ void dma2_stream1_isr(void)
 
     // Count the frames
     frame_counter++;
-    led_toggle = 1 - led_toggle;
 
-    /*
-    if (led_toggle == 0)
-    {
-      led_set();
-    }
-    else
-    {
-      led_clear();
-    }*/
   }
 
   // Get the currently used buffer
 #ifdef SMALL_IMAGE
-  // 128 x 96: comment out for larger images:
+  // 128 x 96
+
+
+  //hmm, this does not work properly for some reason:
+  // if (cameraMode != currentCameramode) {
+
+  //  if (cameraMode==0) {
+  //    camera_cpld_stereo_pixmux();
+  //    current_image_buffer2 = dcmi_image_buffer_8bit_2;
+  //  } else {
+
+  //    camera_cpld_stereo_right();
+  //    current_image_buffer1 = dcmi_image_buffer_8bit_1;
+  //  }
+  //  currentCameramode = cameraMode;
+  // }
+
+
   if (DMA_GetCurrentMemoryTarget(DMA2_Stream1) == DMA_Memory_0) {
-    current_image_buffer = dcmi_image_buffer_8bit_2;
+    camera_cpld_stereo_pixmux();
+    current_image_buffer2 = dcmi_image_buffer_8bit_2;
   } else {
-    current_image_buffer = dcmi_image_buffer_8bit_1;
+    camera_cpld_stereo_left();
+    current_image_buffer1 = dcmi_image_buffer_8bit_1;
   }
 #else
   // 176 x 144
-  current_image_buffer = dcmi_image_buffer_8bit_1;
+  current_image_buffer1 = dcmi_image_buffer_8bit_1;
 #endif
 
 }

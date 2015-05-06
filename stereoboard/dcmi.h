@@ -4,6 +4,7 @@
 
 #include <stdint.h>
 
+
 // Initialize camera subsystems
 void camera_clock_init(void);
 void camera_reset_init(void);
@@ -17,6 +18,8 @@ void camera_reset(void);
 void camera_dcmi_dma_enable(void);
 void camera_dcmi_it_init(void);
 void camera_dma_it_init(void);
+
+void camera_dcmi_init(void);
 
 // To change image size, change the following define:
 #define SMALL_IMAGE
@@ -32,7 +35,13 @@ void camera_dma_it_init(void);
 #define IMAGE_HEIGHT      144
 #endif
 
-extern uint8_t *current_image_buffer;
+extern uint8_t *current_image_buffer1;
+extern uint8_t *current_image_buffer2;
+
+extern uint8_t cameraMode;
+#define STEREO 0
+#define COLOR 1
+
 
 extern volatile int frame_counter;
 

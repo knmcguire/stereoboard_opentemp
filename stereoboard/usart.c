@@ -10,6 +10,8 @@
 #include "stm32f4xx_usart.h"
 #include "stm32f4xx_gpio.h"
 #include "stm32f4xx_rcc.h"
+
+#include <stdio.h>
 //#include "misc.h"
 
 // FIXME calculate buffer size, now it's just an estimation
@@ -237,23 +239,17 @@ void myhex(uint8_t v, char *buf)
 void print_number(uint32_t number, uint8_t new_line)
 {
   //usart_tx_ringbuffer_pop_to_usart();
-#define BLEN 8
-  char comm_buff[ BLEN ];
-  int ii;
-  for (ii = 0; ii < BLEN; ii++) {
-    comm_buff[ii] = ' ';
-  }
 
-  itoa(comm_buff, (unsigned int) number, 10);
+  char comm_buff[ 64 ];
+
+  int n;
   if (new_line) {
-    comm_buff[BLEN - 2] = '\n';
-    comm_buff[BLEN - 1] = '\r';
+    n = sprintf(comm_buff, "%d\n\r", (unsigned int) number);
   } else {
-    comm_buff[BLEN - 2] = ' ';
-    comm_buff[BLEN - 1] = ' ';
+    n = sprintf(comm_buff, "%d ", (unsigned int) number);
   }
 
-  usart_tx_ringbuffer_push((uint8_t *)&comm_buff, BLEN);
+  usart_tx_ringbuffer_push((uint8_t *)&comm_buff, n);
 }
 
 void print_space()
@@ -276,3 +272,20 @@ void print_numbers(uint32_t *numbers, uint8_t size, uint8_t new_line)
   print_number(numbers[size - 1], new_line);
 }
 
+void print_byte(uint8_t b)
+{
+  uint8_t code[1];
+  code[0] = b;
+
+  while (usart_tx_ringbuffer_push(code, 1) == 0)
+    ;
+}
+
+void print_string(char *s, int len)
+{
+
+  while (usart_tx_ringbuffer_push(s, len) == 0)
+    ;
+
+
+}

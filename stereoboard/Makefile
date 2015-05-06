@@ -14,7 +14,7 @@ GDB           = $(CROSS)gdb
 
 CFLAGS        = -g -O3 -mlittle-endian -mthumb -DHSE_VALUE=12000000
 CFLAGS       += -mcpu=cortex-m4	-DARM_MATH_CM4
-CFLAGS       += -ffreestanding -nostdlib
+CFLAGS       += -ffreestanding -std=gnu11  --specs=rdimon.specs
 
 # to run from FLASH
 CFLAGS       += -Wl,-T,stm32_flash.ld
@@ -74,11 +74,17 @@ ${STDPH_PATH}/src/stm32f4xx_syscfg.c \
 ${STDPH_PATH}/src/stm32f4xx_tim.c \
 ${STDPH_PATH}/src/stm32f4xx_usart.c \
 ${STDPH_PATH}/src/stm32f4xx_wwdg.c \
+${DSP_LIB_PATH}/BasicMathFunctions/arm_sub_q15.c \
 ${DSP_LIB_PATH}/BasicMathFunctions/arm_sub_q7.c \
 ${DSP_LIB_PATH}/BasicMathFunctions/arm_abs_q7.c \
+${DSP_LIB_PATH}/BasicMathFunctions/arm_shift_q15.c \
+${DSP_LIB_PATH}/BasicMathFunctions/arm_negate_q15.c \
 ${DSP_LIB_PATH}/BasicMathFunctions/arm_offset_q7.c \
 ${DSP_LIB_PATH}/SupportFunctions/arm_fill_q7.c \
 ${DSP_LIB_PATH}/SupportFunctions/arm_fill_q15.c \
+${DSP_LIB_PATH}/SupportFunctions/arm_copy_q15.c \
+${DSP_LIB_PATH}/SupportFunctions/arm_q15_to_q7.c \
+${DSP_LIB_PATH}/SupportFunctions/arm_q7_to_q15.c \
 ${DSP_LIB_PATH}/BasicMathFunctions/arm_sub_q15.c \
 ${DSP_LIB_PATH}/BasicMathFunctions/arm_abs_q15.c \
 ${DSP_LIB_PATH}/BasicMathFunctions/arm_offset_q15.c \
@@ -102,19 +108,37 @@ $(BIN_IMAGE): $(EXECUTABLE)
 
 MAIN_SRCS = \
 main.c \
+main_parameters.h \
 stm32f4xx_it.c \
 system_stm32f4xx.c \
 led.c \
+led.h \
 usart.c \
+usart.h \
 dcmi.c \
+dcmi.h \
 tcm8230.c \
+tcm8230.h \
 jpeg.c \
+jpeg.h \
 cpld.c \
+cpld.h \
 stereo_vision.c \
+stereo_vision.h \
+optic_flow.c \
+optic_flow.h \
 window_detection.c \
+window_detection.h \
 filter_color.c \
+filter_color.h \
+color.c \
+color.h \
+detector.c  	\
+detector.h  	\
 entropy_patches.c \
+entropy_patches.h \
 usbd_cdc_vcp.c \
+usbd_cdc_vcp.h \
 usb_bsp.c \
 usbd_desc.c \
 usbd_usr.c \
