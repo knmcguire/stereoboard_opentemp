@@ -14,6 +14,7 @@
 #include "cpld.h"
 #include "usart.h"
 #include "tcm8230.h"
+#include "hmc5883.h"
 #include "stm32f4xx_conf.h"
 #include "jpeg.h"
 #include "arm_math.h"
@@ -38,6 +39,53 @@ uint8_t *jpeg_image_buffer_8bit = ((uint8_t *) 0x10000000); //[FULL_IMAGE_SIZE];
 void Delay(__IO uint32_t nCount);
 /* Private functions ---------------------------------------------------------*/
 
+void drawline(int16_t l)
+{
+  uint16_t width = 128; // 176; // 128;
+  uint8_t code[4];
+  code[0] = 0xff;
+  code[1] = 0x00;
+  code[2] = 0x00;
+  {
+    int i;
+    uint8_t debug[256];
+
+    for (i = 0; i < 128 * 2; i++) {
+      debug[i] = 127;
+    }
+
+    if (l >= 0) {
+      l /= 2;
+      if (l > 100) {
+        l = 100;
+      }
+      for (i = 0; i < l; i++) {
+        debug[i] = 230;
+      }
+    } else {
+      l = -l;
+      l /= 2;
+      if (l > 100) {
+        l = 100;
+      }
+      for (i = 0; i < l; i++) {
+        debug[i] = 20;
+      }
+    }
+
+    code[3] = 0x80;
+    while (usart_tx_ringbuffer_push(code, 4) == 0)
+      ;
+    while (usart_tx_ringbuffer_push(debug, width) == 0)
+      ;
+    while (usart_tx_ringbuffer_push(debug + width, width) == 0)
+      ;
+    code[3] = 0xDA;
+    while (usart_tx_ringbuffer_push(code, 4) == 0)
+      ;
+  }
+
+}
 
 void Send(uint8_t *b)
 {
@@ -48,6 +96,14 @@ void Send(uint8_t *b)
 
   uint16_t width = 128; // 176; // 128;
   uint16_t height = 96; // 144; // 96;
+
+#if 1
+  {
+    drawline(magneticfield[0]);
+    drawline(magneticfield[1]);
+    drawline(magneticfield[2]);
+  }
+#endif
 
   int j = 0;
   for (j = 0; j < height; j++) {
@@ -212,8 +268,8 @@ int main(void)
   camera_cpld_stereo_init();
   //camera_cpld_stereo_left();
   //camera_cpld_stereo_right();
-  camera_cpld_stereo_pixmux();
-  //camera_cpld_stereo_linemux();
+  //camera_cpld_stereo_pixmux();
+  camera_cpld_stereo_linemux();
   //camera_cpld_stereo_framemux();
 
   // Reset the camera's
@@ -242,6 +298,7 @@ int main(void)
 
   // Communicate with camera, setup image type and start streaming
   camera_tcm8230_config();
+  hmc5883_config();
 
   // Start DCMI interrupts
   // camera_dcmi_it_init();
@@ -258,8 +315,8 @@ int main(void)
   uint8_t disparity_image_buffer_8bit[FULL_IMAGE_SIZE / 2]; // actually too large
   uint32_t image_width = 128;
   uint32_t image_height = 96;
-  uint8_t DISPARITY = 1;
-  uint8_t SEND_RAW = 0;
+  uint8_t DISPARITY = 0;
+  uint8_t SEND_RAW = 1;
   uint8_t TIME_PROCESSING = 0;
   uint32_t start, stop;
   if (DISPARITY) {
@@ -297,6 +354,11 @@ int main(void)
     processed = frame_counter;
 
     //usart_tx_ringbuffer_pop_to_usart();
+    //if (1)
+    {
+      hmc5883_read();
+    }
+    //else
     if (!DISPARITY) {
       //while (usart_char_available())
       if (SEND_RAW) {

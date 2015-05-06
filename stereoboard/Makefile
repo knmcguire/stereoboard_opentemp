@@ -117,7 +117,8 @@ usb_bsp.c \
 usbd_desc.c \
 usbd_usr.c \
 usb_core.c \
-utils.c
+utils.c \
+hmc5883.c
 
 
 MAIN_OBJS = $(MAIN_SRCS:.c=.o)

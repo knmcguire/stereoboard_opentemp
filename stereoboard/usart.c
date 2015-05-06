@@ -188,7 +188,7 @@ void usart_init()
   USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
   USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
 
-  USART_InitStructure.USART_BaudRate = 3000000; //9600; //3000000; //921600; //19200; //6400 * 2; //9600 for APcomm;
+  USART_InitStructure.USART_BaudRate = 1000000; //9600; //3000000; //921600; //19200; //6400 * 2; //9600 for APcomm;
   USART_Init(MY_USART_NR, &USART_InitStructure);
 
   USART_Cmd(MY_USART_NR, ENABLE);
@@ -229,17 +229,21 @@ void myhex(uint8_t v, char *buf)
 
 }
 
-void print_number(uint32_t number, uint8_t new_line)
+void print_number(int32_t number, uint8_t new_line)
 {
   //usart_tx_ringbuffer_pop_to_usart();
-#define BLEN 8
+#define BLEN 16
   char comm_buff[ BLEN ];
   int ii;
   for (ii = 0; ii < BLEN; ii++) {
     comm_buff[ii] = ' ';
   }
 
-  itoa(comm_buff, (unsigned int) number, 10);
+  if (number < 0) {
+    number = -number;
+  }
+
+  itoa(comm_buff, number, 10);
   if (new_line) {
     comm_buff[BLEN - 2] = '\n';
     comm_buff[BLEN - 1] = '\r';

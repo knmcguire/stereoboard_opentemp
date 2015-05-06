@@ -44,7 +44,7 @@ void camera_tcm8230_i2c_init(void)
   I2C_InitStruct.I2C_OwnAddress1 = 0xFE;
   I2C_InitStruct.I2C_Ack = I2C_Ack_Enable;
   I2C_InitStruct.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-  I2C_InitStruct.I2C_ClockSpeed = 50000;
+  I2C_InitStruct.I2C_ClockSpeed = 25000;
 
   // Initialize the I2C peripheral w/ selected parameters
   I2C_Init(I2C2, &I2C_InitStruct);
@@ -90,7 +90,7 @@ uint8_t tcm8230_ReadReg(uint8_t Addr, uint8_t *reply);
 void camera_tcm8230_config(void)
 {
   tcm8230_WriteReg(TCM_FPS, TCM_FPS_FAST);
-  tcm8230_WriteReg(TCM_IMG, IMG_COLOR_COLOR | IMG_FORMAT_YUV422 | IMG_SIZE_subQCIF);//IMG_SIZE_QCIF);//IMG_SIZE_subQCIF);
+  tcm8230_WriteReg(TCM_IMG, IMG_COLOR_COLOR | IMG_FORMAT_RGB565 | IMG_SIZE_subQCIF);//IMG_SIZE_QCIF);//IMG_SIZE_subQCIF);
   tcm8230_WriteReg(TCM_SWC, TCM_SWC_VAL);
   tcm8230_WriteReg(TCM_EXP, EXP_DEFAULT | EXP_SHORT);
 }
