@@ -30,9 +30,11 @@
 __ALIGN_BEGIN USB_OTG_CORE_HANDLE  USB_OTG_dev __ALIGN_END;
 
 // integral_image has size 128 * 96 * 4 = 49152 bytes = C000 in hex
-uint32_t *integral_image = ((uint32_t *) 0x10000000); // 0x10000000 - 0x1000 FFFF = CCM data RAM
+uint32_t *integral_image = ((uint32_t *) 0x10000000); // 0x10000000 - 0x1000 FFFF = CCM data RAM  (64kB)
 //uint8_t* jpeg_image_buffer_8bit = ((uint8_t*) 0x1000D000); // 0x10000000 - 0x1000 FFFF = CCM data RAM
 //uint8_t* disparity_image_buffer_8bit = ((uint8_t*) 0x10000000);
+
+uint16_t offset_crop = 0;
 
 /** @addtogroup StereoCam
   * @{
@@ -61,6 +63,25 @@ void Send(uint8_t *b)
   code[1] = 0x00;
   code[2] = 0x00;
 
+  code[3] = 0xAF;
+  while (usart_tx_ringbuffer_push(code, 4) == 0)
+    ;
+
+  uint8_t msg = 0x07;
+  while (usart_tx_ringbuffer_push(&msg, 1) == 0)
+    ;
+
+#ifdef LARGE_IMAGE
+
+  if (offset_crop == 0) {
+    code[3] = 0xAC;
+    while (usart_tx_ringbuffer_push(code, 4) == 0)
+      ;
+  }
+
+#endif
+
+
   uint16_t width = IMAGE_WIDTH;
   uint16_t height = IMAGE_HEIGHT;
 
@@ -69,9 +90,7 @@ void Send(uint8_t *b)
     code[3] = 0x80;
     while (usart_tx_ringbuffer_push(code, 4) == 0)
       ;
-    while (usart_tx_ringbuffer_push(b + width * j * 2, width) == 0)
-      ;
-    while (usart_tx_ringbuffer_push(b + width * j * 2 + width, width) == 0)
+    while (usart_tx_ringbuffer_push(b + width * j * 2, width * 2 + 1) == 0)
       ;
 
     code[3] = 0xDA;
@@ -82,6 +101,7 @@ void Send(uint8_t *b)
   code[3] = 0xAB;
   while (usart_tx_ringbuffer_push(code, 4) == 0)
     ;
+
 }
 
 void SendJpeg(uint8_t *b, uint32_t size)
@@ -117,12 +137,15 @@ void SendDisparityMap(uint8_t *b)
   code[1] = 0x00;
   code[2] = 0x00;
 
+  uint16_t height = IMAGE_HEIGHT;
+  int16_t width = IMAGE_WIDTH;
+
   int j = 0;
-  for (j = 0; j < 96; j++) {
+  for (j = 0; j < height; j++) {
     code[3] = 0x80;
     while (usart_tx_ringbuffer_push(code, 4) == 0)
       ;
-    while (usart_tx_ringbuffer_push(b + 128 * j, 128) == 0)
+    while (usart_tx_ringbuffer_push(b + width * j, width) == 0)
       ;
 
     code[3] = 0xDA;
@@ -135,6 +158,15 @@ void SendDisparityMap(uint8_t *b)
     ;
 }
 
+void SendStartComm()
+{
+  uint8_t code[1];
+  code[0] = 0xff;
+
+  while (usart_tx_ringbuffer_push(code, 1) == 0)
+    ;
+}
+
 void SendCommand(uint8_t b)
 {
   uint8_t code[1];
@@ -144,7 +176,7 @@ void SendCommand(uint8_t b)
     ;
 }
 
-void SendCommandHeight(uint8_t b)
+void SendCommandNumber(uint8_t b)
 {
   uint8_t code[1];
   code[0] = b;
@@ -220,6 +252,7 @@ int main(void)
   camera_tcm8230_i2c_init();
   // Start listening to DCMI frames
   camera_dcmi_init();
+  camera_dcmi_it_init();
   camera_dcmi_dma_enable();
   // Wait for at least 2000 clock cycles after reset
   Delay(0x07FFFF);
@@ -230,17 +263,25 @@ int main(void)
   // Print welcome message
   char comm_buff[128] = " --- Stereo Camera --- \n\r";
   usart_tx_ringbuffer_push((uint8_t *)&comm_buff, strlen(comm_buff));
+
+
   // Disparity image buffer:
   uint8_t disparity_image_buffer_8bit[FULL_IMAGE_SIZE / 2];
   uint16_t ind;
   for (ind = 0; ind < FULL_IMAGE_SIZE / 2; ind++) {
     disparity_image_buffer_8bit[ind] = 0;
   }
+
+  /*
   // slight waste of memory, if color is not used:
-  uint8_t filtered_image[FULL_IMAGE_SIZE / 2];
-  for (ind = 0; ind < FULL_IMAGE_SIZE / 2; ind++) {
+  uint8_t filtered_image[FULL_IMAGE_SIZE/2];
+  for(ind = 0; ind < FULL_IMAGE_SIZE/2; ind++)
+  {
     filtered_image[ind] = 0;
   }
+  */
+
+
   uint8_t min_y, max_y;
   uint32_t image_width = IMAGE_WIDTH;
   uint32_t image_height = IMAGE_HEIGHT;
@@ -252,9 +293,9 @@ int main(void)
    *******************/
 
   // Avoidance parameters;
-  uint16_t obst_thr1 = 1700; // number of pixels with high disparity [1700] [3000]
+  uint16_t obst_thr1 = 1700; // number of pixels with high disparity
   uint8_t obst_thr2 = 5; // number of obstacle detections in row
-  uint16_t obst_wait = 0; //2000; // time to wait before avoidance manoeuver [ms]
+  uint16_t obst_wait = 800; // time to wait before avoidance manoeuver [ms]
   uint16_t obst_thr3 = 1500; // number of pixels with low disparity (phase 3)
   uint8_t obst_thr4 = 2; // number of NO obstacle detections in row (phase 3)
   uint16_t obst_entr = 70; // entropy threshold
@@ -268,12 +309,14 @@ int main(void)
   uint8_t obst_dect2 = 0;
   uint32_t obst_time2 = 0;
 
-  uint8_t disparity_threshold = 5; // [5] [4]
+  uint8_t disparity_threshold = 5;
   uint32_t disparities_high = 0;
   uint32_t entropy;
 
   // Stereo parameters:
-  uint32_t disparity_range = 15; // at a distance of 1m, disparity is 7-8
+  uint32_t disparity_range = 30; // at a distance of 1m, disparity is 7-8
+  uint32_t disparity_min = 0;
+  uint32_t disparity_step = 3;
   uint8_t thr1 = 4;
   uint8_t thr2 = 4;
   uint8_t diff_threshold = 4; // for filtering
@@ -286,10 +329,19 @@ int main(void)
   uint16_t n_red_pixels = 0;
 
   // Avoidance parameters;
-  /*uint8_t disp_threshold = 5; // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  uint8_t n_disp_bins = 2;
+  uint8_t disp_threshold = 5;
+  if (STEREO_CAM_NUMBER == 1) {
+    disp_threshold = 3;
+  }
+  uint8_t n_disp_bins = 6;
   uint32_t disparities[n_disp_bins];
-  uint32_t avg_disparities[n_disp_bins];
+  uint8_t RESOLUTION = 100;
+
+  uint8_t bin;
+  for (bin = 0; bin < n_disp_bins; bin++) {
+    disparities[bin] = (uint8_t)48 + bin;
+  }
+  /*uint32_t avg_disparities[n_disp_bins];
   uint8_t bin;
   for(bin = 0; bin < n_disp_bins; bin++)
   {
@@ -317,223 +369,82 @@ int main(void)
   uint8_t toggled = 0;
   uint8_t toggle_image_type = STEREO_PIXMUX;
 
+
+
   // timer:
   // start = TIM_GetCounter ( TIM2 );
 
   /***********
    * MAIN LOOP
    ***********/
+  //DCMI_CaptureCmd(ENABLE);
 
-  int processed = 0;
+  volatile int processed = 0;
   while (1) {
+
+#ifdef LARGE_IMAGE
+    offset_crop += 80;
+    if (offset_crop == 480) {
+      offset_crop = 0;
+    }
+    camera_crop(offset_crop);
+#endif
+    DCMI_CaptureCmd(ENABLE); // while no new frame, ask DCMI to capture a new frame
     // wait for new frame
     while (frame_counter == processed)
       ;
+
+
+
+
     if (SEND_IMAGE) {
       Send(current_image_buffer);
     }
-
-    if (!USE_COLOR || toggled != frame_counter - 1) {
-
-      processed = frame_counter;
-
-      if (toggle_image_type == STEREO_PIXMUX) {
-        // Determine disparities:
-        min_y = 0;
-        max_y = 95;
-        //stereo_vision(current_image_buffer, disparity_image_buffer_8bit, image_width, image_height, disparity_range, thr1, thr2, min_y, max_y);
-        stereo_vision_Kirk(current_image_buffer, disparity_image_buffer_8bit, image_width, image_height, disparity_range, thr1,
-                           thr2, min_y, max_y);
+    processed = frame_counter;
+    //led_toggle();
 
 
 
-        if (SEND_DISPARITY_MAP) {
-          SendDisparityMap(disparity_image_buffer_8bit);
-        }
 
-        disparities_high = evaluate_disparities(disparity_image_buffer_8bit, image_width, image_height, disparity_threshold,
-                                                disparities_high);
 
-        // entropy of patches:
-        entropy = get_entropy_patches(0, current_image_buffer, image_width, image_height, 0, 40, 0, 96, 5, 10, 10);
+    if (SEND_COMMANDS) {
+      // Determine disparities:
+      min_y = 0;
+      max_y = 95;
+      stereo_vision_Kirk(current_image_buffer, disparity_image_buffer_8bit, image_width, image_height, disparity_min,
+                         disparity_range, disparity_step, thr1, thr2, min_y, max_y);
 
-        // min_response = detect_window_sizes(disparity_image_buffer_8bit, image_width, image_height, coordinate, integral_image, MODE_DISPARITY);
 
-        // left / right control in obstacle zone
-        // min_y = 24;
-        // max_y = 72;
-        // filter_disparity_map(disparity_image_buffer_8bit, diff_threshold, image_width, image_height, min_y, max_y);
-        // evaluate_central_disparities2(disparity_image_buffer_8bit, image_width, image_height, disparities, n_disp_bins, min_y, max_y, disp_threshold);
+      uint8_t border = 0; // 10 was the standard value
+      // GUIDO
+      evaluate_central_disparities2(disparity_image_buffer_8bit, image_width, image_height, disparities, n_disp_bins, min_y,
+                                    max_y, disp_threshold, border);
+      //    express the outputs as percentages:
+      //    number of pixels relative to the evaluated part of the image with high disparities:
+      disparities[0] = (disparities[0] * RESOLUTION) / ((max_y - min_y) * (image_width - 2 * border));
+      //    x-coordinate as coordinate of the entire image:
+      disparities[1] = (disparities[1] * RESOLUTION) / image_width;
 
-        // Detect window with illuminance:
-        // transform_illuminance_image(current_image_buffer, disparity_image_buffer_8bit, image_width, image_height, n_bits, BRIGHT_WINDOW);
-        // min_response = detect_window_sizes(disparity_image_buffer_8bit, image_width, image_height, coordinate, integral_image, MODE_ILLUMINANCE);
-        //min_disp = detect_escape(disparity_image_buffer_8bit, image_width, image_height, escape_coordinate, integral_image, n_cells);
-
-      } else {
-        led_switch();
-
-        n_red_pixels = filter_red_color(current_image_buffer, filtered_image, image_width, image_height, min_U, max_U, min_V,
-                                        max_V);
-        /*
-                // Detect window with filtered color:
-                min_response = detect_window_sizes(filtered_image, image_width, image_height, coordinate, integral_image, MODE_FILTER);
-                //min_disp = detect_escape(filtered_image, image_width, image_height, escape_coordinate, integral_image, n_cells);
-                 *
-                 */
-      }
-
-      /*if(min_response < window_threshold)
-      {
-        led_set();
-        // rely on window detection:
-        window_coordinate[0] = (weight_old * window_coordinate[0] + weight_new * coordinate[0]) / weight_total;
-        window_coordinate[1] = (weight_old * window_coordinate[1] + weight_new * coordinate[1]) / weight_total;
-        //window_coordinate[0] = (weight_old * window_coordinate[0] + weight_new * 64) / weight_total;
-        //window_coordinate[1] = (weight_old * window_coordinate[1] + weight_new * 48) / weight_total;
-        //window_coordinate[0] = (weight_old * window_coordinate[0] + weight_new * escape_coordinate[0]) / weight_total;
-        //window_coordinate[1] = (weight_old * window_coordinate[1] + weight_new * escape_coordinate[1]) / weight_total;
-      }
-      else
-      {
-        led_clear();
-        // rely on escape route flying:
-        //window_coordinate[0] = (weight_old * window_coordinate[0] + weight_new * escape_coordinate[0]) / weight_total;
-        //window_coordinate[1] = (weight_old * window_coordinate[1] + weight_new * escape_coordinate[1]) / weight_total;
-        window_coordinate[0] = (weight_old * window_coordinate[0] + weight_new * 64) / weight_total;
-        window_coordinate[1] = (weight_old * window_coordinate[1] + weight_new * 48) / weight_total;
-        //window_coordinate[0] = (weight_old * window_coordinate[0] + weight_new * coordinate[0]) / weight_total;
-        //window_coordinate[1] = (weight_old * window_coordinate[1] + weight_new * coordinate[1]) / weight_total;
-      }*/
-
-      if (SEND_ILLUMINANCE) {
-        uint16_t xx, yy;
-        /*if(min_response < window_threshold)
-        {
-          for(xx=window_coordinate[0]-2;xx<window_coordinate[0]+2;xx++)
-          {
-            for(yy = window_coordinate[1]-2; yy<window_coordinate[1]+2;yy++)
-            {
-              disparity_image_buffer_8bit[window_coordinate[0]+window_coordinate[1]*image_width] = 255;
-            }
-          }
-        }*/
-        SendDisparityMap(disparity_image_buffer_8bit);
-      }
-      if (SEND_FILTER) {
-        uint16_t xx, yy;
-        /*if(min_response < window_threshold)
-        {
-          for(xx=window_coordinate[0]-2;xx<window_coordinate[0]+2;xx++)
-          {
-            for(yy = window_coordinate[1]-2; yy<window_coordinate[1]+2;yy++)
-            {
-              filtered_image[window_coordinate[0]+window_coordinate[1]*image_width] = 2;
-            }
-          }
-        }*/
-        SendDisparityMap(filtered_image);
-      }
-
-      if (SEND_COMMANDS) {
-        // Control logic
-        if (phase == 1) { // unobstructed flight
-          if (disparities_high > obst_thr1) { //|| entropy < obst_entr) // if true, obstacle in sight
-            obst_dect++;
-          } else {
-            obst_dect = 0;
-          }
-
-          if (obst_dect > obst_thr2) { // if true, obstacle is consistent
-            phase = 2;
-            obst_dect = 0; // set zero for later
-          }
-        } else if (phase == 2) { // obstacle detected, wait for action
-          if (obst_time == 0) { // when entering phase, set start time
-            obst_time = TIM_GetCounter(TIM2);
-          }
-
-          if ((TIM_GetCounter(TIM2) - obst_time) > obst_wait * 2) {  // wait (2 clocks per ms)
-            phase = 3;
-            obst_time = 0; // set zero for later
-          }
-        } else if (phase == 3) { // avoid
-          // Turn command signal for AutoPilot ???
-          if (disparities_high < obst_thr3) { // if true, flight direction is safe
-            obst_free++;
-          } else {
-            obst_free = 0;
-          }
-
-          if (obst_free > obst_thr4) { // if true, consistently no obstacles
-            if (entropy > obst_entr) { // do the entropy check
-              phase = 4;
-              obst_free = 0; // set zero for later
-            }
-          }
-        } else if (phase == 4) { // fly straight, but be aware of undetected obstacles
-          if (obst_time2 == 0) { // when entering phase, set start time
-            obst_time2 =  TIM_GetCounter(TIM2);
-          }
-
-          if (disparities_high > obst_thr1) { // if true, obstacle in sight
-            obst_dect2++;
-          } else {
-            obst_dect2 = 0;
-          }
-
-          if (obst_dect2 > obst_thr5) { // if true, obstacle is consistent
-            phase = 3; // go back to phase 3
-            obst_time2 = 0; // set zero for later
-            obst_dect2 = 0; // set zero for later
-
-          } else if ((TIM_GetCounter(TIM2) - obst_time2) > obst_wait2 * 2) {  // wait (2 clocks per ms)
-            phase = 1;
-            obst_time2 = 0; // set zero for later
-            obst_dect2 = 0;
-          }
-        }
-
-        // turn command:
-        if (phase == 3) {
-          SendCommand(1);
-        } else {
-          SendCommand(0);
-        }
-
-        if (phase == 2 || phase == 3) {
-          led_set();
-        } else {
-          led_clear();
-        }
-
-      }
-
-      if (USE_COLOR) {
-        if (toggle_image_type != YUV_COLOR) {
-          camera_cpld_stereo_right();
-          toggle_image_type = YUV_COLOR;
-        }
-
-//        counter++;
-//        if(counter >= MAX_RATIO)
-//        {
-//          counter = 0;
-//        }
-//        if(counter < COLOR_RATIO && toggle_image_type != YUV_COLOR)
-//        {
-//          camera_cpld_stereo_left();
-//          toggled = processed; // skip the next frame
-//          toggle_image_type = YUV_COLOR;
-//        }
-//        else if(toggle_image_type != STEREO_PIXMUX)
-//        {
-//          camera_cpld_stereo_pixmux();
-//          toggled = processed; // skip the next frame
-//          toggle_image_type = STEREO_PIXMUX;
-//        }
-      }
+      // Send commands
+      // send 0xff
+      SendStartComm();
+      // percentage of close pixels
+      SendCommandNumber((uint8_t) disparities[0]);
+      // percentage of x-location
+      SendCommandNumber((uint8_t) disparities[1]);
     }
+
+    if (SEND_DISPARITY_MAP) {
+      // Determine disparities:
+      min_y = 0;
+      max_y = 95;
+      stereo_vision_Kirk(current_image_buffer, disparity_image_buffer_8bit, image_width, image_height, disparity_min,
+                         disparity_range, disparity_step, thr1, thr2, min_y, max_y);
+
+      SendDisparityMap(disparity_image_buffer_8bit);
+
+    }
+
   }
 }
 
