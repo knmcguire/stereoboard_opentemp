@@ -1,4 +1,4 @@
-file StereoLed.elf
+file StereoBoard.elf
 monitor version
 monitor swdp_scan
 attach 1
