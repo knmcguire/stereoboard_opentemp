@@ -193,16 +193,18 @@ void edgeflow_init(int16_t img_w, int16_t img_h, int8_t use_monocam, struct cam_
 void send_edgeflow(void)
 {
 #ifdef EDGEFLOW_DEBUG
+	  static uint8_t edgeflow_msg[22] = {0};
+
   /*EDGEFLOW_DEBUG defines which type of information is send through the edgelflowArray.
    For debugging, intermediate results are necessary to simplify the programming
    When EDGEFLOW_DEBUG is defined, it will send through the current histogram, the previous and the calculated displacement
    when it is not defined, it will send through flow, divergence and velocity*/
   static uint8_t edgeflow_debug_msg[128 * 5] = {0};
-  uint8_t *current_frame_nr = &edgeflow->current_frame_nr;
-  uint8_t *previous_frame_offset = &edgeflow->previous_frame_offset;
+  //uint8_t *current_frame_nr = &edgeflow.current_frame_nr;
+  //uint8_t *previous_frame_offset = &edgeflow.previous_frame_offset;
 
-  uint8_t previous_frame_x = (*current_frame_nr - previous_frame_offset[0] + MAX_HORIZON) %
-                             MAX_HORIZON; // wrap index
+  //uint8_t previous_frame_x = (*current_frame_nr - previous_frame_offset[0] + MAX_HORIZON) %
+                             //MAX_HORIZON; // wrap index
 
   uint8_t x = 0;
   uint8_t edge_hist_int8[128];
@@ -212,14 +214,14 @@ void send_edgeflow(void)
   uint8_t plot3[128];
   for (x = 0; x < 128; x++) {
 
-    plot3[x] = boundint8((edgeflow->displacement.stereo[x] * 10 + 127));
+    //plot3[x] = boundint8((edgeflow.displacement.stereo[x] * 10 + 127));
 
-    plot2[x] = boundint8((edgeflow->displacement.x[x] * 20 + 127));
-    edge_hist_int8[x] = boundint8((edgeflow->vel_per_column[x] / 100 + 127));
-    displacement_int8[x] = boundint8((edgeflow->stereo_distance_per_column[x] / 10  + 127));
+   // plot2[x] = boundint8((edgeflow.displacement.x[x] * 20 + 127));
+    //edge_hist_int8[x] = boundint8((edgeflow.vel_per_column[x] / 100 + 127));
+    displacement_int8[x] = boundint8((edgeflow.disp.stereo[x] ));
 
-    edge_hist_prev_int8[x] = boundint8((edgeflow->vel.x * (128 * 100 / 104)
-                                        + edgeflow->vel.z * (x - 64)) / 100 + 127);
+    edge_hist_prev_int8[x] = boundint8((edgeflow.vel.x * (128 * 100 / 104)
+                                        + edgeflow.vel.z * (x - 64)) / 100 + 127);
 
   }
 
@@ -233,12 +235,13 @@ void send_edgeflow(void)
   memcpy(edgeflow_debug_msg + 128 * 4, &plot3,
          128 * sizeof(uint8_t));// copy quality measures to output array
 
-  memcpy(edgeflow_msg, edgeflow_debug_msg, 128 * 5 * sizeof(uint8_t));
+  //memcpy(edgeflow_msg, edgeflow_debug_msg, 128 * 5 * sizeof(uint8_t));
+  SendArray(edgeflow_debug_msg, 128, 5);
 
 #ifndef COMPILE_ON_LINUX
   SendArray(edgeflow_msg, 128, 5);
-#endif
-#elif defined(USE_PPRZLINK)
+#endif // Compile on linux
+#elif defined(USE_PPRZLINK) //edgeflow_debug
   uint8_t frame_freq = boundint8(edgeflow.hz.x / edgeflow_params.RES);
   uint8_t func_freq = boundint8(1e6 / edgeflow.dt);
   uint8_t res = bounduint8(edgeflow_params.RES);
@@ -255,7 +258,7 @@ void send_edgeflow(void)
       &(edgeflow.flow_quality), &(edgeflow_snapshot.quality),
       &avg_dist);
 #endif
-#else
+#else  //edgeflow_debug
   static uint8_t edgeflow_msg[22] = {0};
   edgeflow_msg[0] = edgeflow_params.RES;
   edgeflow_msg[1] = boundint8(edgeflow.distance_closest_obstacle / 10);

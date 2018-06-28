@@ -6,11 +6,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import math
-plt.axis([0,300, 0 , 255])
+plt.axis([0,100, 0,255])
 plt.ion()
 plt.show()
    
-ser = serial.Serial('/dev/ttyUSB0',115200,timeout=None)
+ser = serial.Serial('/dev/ttyUSB0',921600,timeout=None)
 height = 0
 radperpx = 0
 distance_pinhole = 0.03
@@ -20,7 +20,7 @@ currentBuffer=[]
 FOV_x=57.4
 FOV_y=45
 maxExpectedInImage=250 # Each pixel is divided by this value to go to grayscale values for the cv2 image
-cv2.namedWindow('img',cv2.WINDOW_NORMAL)
+#cv2.namedWindow('img',cv2.WINDOW_NORMAL)
 velocity_x=0
 velocity_y=0
 velocity_xHistory=[]
@@ -48,6 +48,14 @@ while True:
 
 
             img = stereoboard_tools.fill_image_array(sync1,oneImage, lineLength, lineCount)
+	    print('img',img)
+	    plt.cla()
+	    X = img[2,:]
+	    plt.plot(X)
+	    plt.draw()
+    	    plt.pause(0.05)
+
+	    '''
 	    print 'img: ' , img
             img=np.array(img)
 	    slope_x=(img[0,0]-100)/1000
@@ -80,15 +88,16 @@ while True:
 
             plt.cla()
 	    plt.axis([0,100, -1,1])
-	   # plt.plot(velocity_xHistory)
+	    plt.plot(velocity_xHistory)
 	    plt.draw()
-           #plt.plot(velocity_yHistory)
+            plt.plot(velocity_yHistory)
 	    plt.draw()
 	    plt.plot(velocity_x_pixelwiseHistory)
 	    plt.draw()
             plt.plot(velocity_z_pixelwiseHistory)
 	    plt.draw()
-
+            '''
+	    
 
 	    #time.sleep(0.05)
         

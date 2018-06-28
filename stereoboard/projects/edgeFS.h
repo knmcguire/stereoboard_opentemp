@@ -20,7 +20,7 @@
 #define EDGEFLOW_USE_SNAPSHOT true
 
 #define DCMI_MODE DCMI_MODE_3
-
+#define COMPILE ON LINUX
 //////////////////////////////////////////////////////
 // The default communication via UsartTx must be connected to a Usart
 // Stereoboard bottom = Usart1

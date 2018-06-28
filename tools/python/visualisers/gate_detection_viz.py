@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import csv
 import time
 import os
-ser = serial.Serial('/dev/ttyUSB0',9600,timeout=None)
+ser = serial.Serial('/dev/ttyUSB0',912600,timeout=None)
 frameNumber = 0
 saveImages= False
 frameNumber = 0
@@ -72,12 +72,12 @@ while True:
             #img /= 6
 
             # Create a color image
-            #img=stereoboard_tools.createRedBlueImage(img,lineCount,lineLength)
+            img=stereoboard_tools.createRedBlueImage(img,lineCount,lineLength)
 
             #if (not '3.0.0'==cv2.__version__) and (not '3.0.0-dev'==cv2.__version__):
             #    print 'resizing stuff!'
             #    img = cv2.resize(img,(0,0),fx=20,fy=20,interpolation=cv2.INTER_NEAREST)
-            #cv2.imshow('img',img)
+            cv2.imshow('img',img)
 	    
             #key=cv2.waitKey(1)
             #if 'q' == chr(key & 255):
