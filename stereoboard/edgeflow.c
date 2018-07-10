@@ -65,8 +65,6 @@ struct edgeflow_parameters_t edgeflow_params;
 struct edgeflow_t edgeflow;
 struct snapshot_t edgeflow_snapshot;
 
-struct cam_state_t *cam_state = NULL;
-
 float sumN1, sumN2;
 
 float coupled_flow_fit(struct displacement_t *disp, struct displacement_t *stereo_disp,
@@ -86,12 +84,12 @@ void edgeflow_total(uint8_t *current_image_buffer, uint32_t image_time)
 
   edgeflow.edge_hist[edgeflow.current_frame_nr].frame_time = image_time;
 
-  if (cam_state != NULL) {
+  if (cam_state.us_timestamp != 0) {
     edgeflow_params.derotation = 1;
-    edgeflow.edge_hist[edgeflow.current_frame_nr].phi = (int16_t)(cam_state->phi * edgeflow_params.RES);
-    edgeflow.edge_hist[edgeflow.current_frame_nr].theta = (int16_t)(cam_state->theta * edgeflow_params.RES);
-    edgeflow.edge_hist[edgeflow.current_frame_nr].psi = (int16_t)(cam_state->psi * edgeflow_params.RES);
-    edgeflow.edge_hist[edgeflow.current_frame_nr].alt = (int16_t)(cam_state->alt * edgeflow_params.RES);
+    edgeflow.edge_hist[edgeflow.current_frame_nr].phi = (int16_t)(cam_state.phi * edgeflow_params.RES);
+    edgeflow.edge_hist[edgeflow.current_frame_nr].theta = (int16_t)(cam_state.theta * edgeflow_params.RES);
+    edgeflow.edge_hist[edgeflow.current_frame_nr].psi = (int16_t)(cam_state.psi * edgeflow_params.RES);
+    edgeflow.edge_hist[edgeflow.current_frame_nr].alt = (int16_t)(cam_state.alt * edgeflow_params.RES);
   } else {
     edgeflow_params.derotation = 0;
   }
@@ -117,7 +115,7 @@ void edgeflow_total(uint8_t *current_image_buffer, uint32_t image_time)
  * */
 void edgeflow_init(int16_t img_w, int16_t img_h, int8_t use_monocam, struct cam_state_t *cam_state_ref)
 {
-  cam_state = cam_state_ref;
+  //cam_state = cam_state_ref;
 
   edgeflow_params.RES = 100;
   edgeflow_params.fovx = (int32_t)(FOVX * edgeflow_params.RES);

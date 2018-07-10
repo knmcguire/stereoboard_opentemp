@@ -11,7 +11,12 @@
 /*****************
  * Project parameters
  *****************/
-#define DEFAULT_BOARD_FUNCTION SEND_EDGEFLOW
+#define NEW_MAIN
+
+void init_project(void);
+void run_project(void);
+
+#define DEFAULT_BOARD_FUNCTION SEND_NONE
 #define CAMERA_CPLD_STEREO camera_cpld_stereo_pixmux
 
 //////////////////////////////////////////////////////
@@ -21,6 +26,8 @@
 
 #define DCMI_MODE DCMI_MODE_3
 
+#define USE_PPRZLINK 1
+
 //////////////////////////////////////////////////////
 // The default communication via UsartTx must be connected to a Usart
 // Stereoboard bottom = Usart1
@@ -29,6 +36,6 @@
 #define UsartTx Usart4Tx
 #define UsartRx Usart4Rx
 #define UsartCh Usart4Ch
-#define USART4_BAUD 921600
+#define USART4_BAUD 115200
 
 #endif /* PROJECT_HEADER_H_ */

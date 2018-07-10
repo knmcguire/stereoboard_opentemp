@@ -16,6 +16,8 @@
 #endif
 #include "main_parameters.h"
 #include "image.h"
+#include "main.h"
+
 
 #ifndef MAX_HORIZON
 #define MAX_HORIZON 10
@@ -29,31 +31,7 @@
 *    V
 */
 
-// TODO: move somewhere better
-struct vec2_t {
-  int32_t x;
-  int32_t y;
-};
 
-struct vec3_t {
-  int32_t x;
-  int32_t y;
-  int32_t z;
-};
-
-struct rot_t {
-  int32_t phi;
-  int32_t theta;
-  int32_t psi;
-};
-
-struct cam_state_t {
-  float phi;
-  float theta;
-  float psi;
-  float alt;
-  int32_t us_timestamp;
-};
 
 struct edge_hist_t {
   int32_t x[IMAGE_WIDTH];   // Edge_hist: edgehistogram in x-direction (image coordinates)

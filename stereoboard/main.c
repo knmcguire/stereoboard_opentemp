@@ -166,6 +166,13 @@ void window_init()
 
 #endif
 
+struct cam_state_t cam_state = {
+	.phi = 0,
+	.theta  = 0,
+	.psi = 0,
+	.alt = 0,
+	.us_timestamp = 0
+};
 
 struct image_t current_image_pair = {
   .w = IMAGE_WIDTH,
@@ -376,7 +383,6 @@ int main(void)
   uint8_t maxDispFound = 0;
   int disparity_velocity_step = 0;
 
-  struct cam_state_t cam_state;
   // initialize edgeflow
   edgeflow_init(IMAGE_WIDTH, IMAGE_HEIGHT, USE_MONOCAM, &cam_state);
 // led_clear();
