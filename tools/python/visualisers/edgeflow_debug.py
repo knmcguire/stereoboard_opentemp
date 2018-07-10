@@ -6,6 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import math
+
+
 plt.axis([0,128, 0 , 255])
 plt.ion()
 plt.show()
@@ -20,7 +22,7 @@ currentBuffer=[]
 FOV_x=57.4
 FOV_y=45
 maxExpectedInImage=250 # Each pixel is divided by this value to go to grayscale values for the cv2 image
-cv2.namedWindow('img',cv2.WINDOW_NORMAL)
+
 velocity_x=0
 velocity_y=0
 velocity_xHistory=[]
@@ -44,23 +46,43 @@ while True:
             if sync1<0:    # We did not find the startbit... try again
                 continue
 
+            debug_array = stereoboard_tools.fill_image_array(sync1,oneImage, lineLength, lineCount)
+            print(debug_array)
+            debug_array=np.array(debug_array)
+            debug_array_t = np.transpose(debug_array)
 
-            img = stereoboard_tools.fill_image_array(sync1,oneImage, lineLength, lineCount)
-	    print 'img: ' , img
-            img=np.array(img)
- 	    img_t = np.transpose(img)
 
+            edge_hist_int8 = debug_array_t[:,0]
+            edge_hist_prev_int8 = debug_array_t[:,1]
+            edge_hist_right_int8 = debug_array_t[:,2]
+            disp_stereo_int8 = debug_array_t[:,3]
+            disp_x_int8 = debug_array_t[:,4]
+            vel_slope = debug_array_t[:,5]
+
+
+
+            
+	    plt.figure(1)
             plt.cla()
-
 	    plt.axis([0,128, 0 , 255])
+            plt.plot(edge_hist_int8,label= "edge_hist_int8")
+            plt.plot(edge_hist_prev_int8,label= "edge_hist_prev_int8")
+            plt.plot(edge_hist_right_int8,label= "edge_hist_right_int8")
+            plt.legend()
 
-            plt.plot(img_t)
-	    plt.draw()
+	    plt.figure(2)
+            plt.cla()
+	    plt.axis([0,128, 0 , 255])
+            plt.plot(disp_stereo_int8,label= "disp_stereo_int8")
+            plt.plot(disp_x_int8,label= "disp_x_int8")
+            plt.plot(vel_slope,label= "vel_slope")
+            plt.legend()
 
+            plt.draw()
+            plt.pause(0.05)
 
-	    time.sleep(0.2)
         
             
     except Exception as excep:
         stereoboard_tools.PrintException()
-        print 'error! ' , excep
+        print('error! ' , excep)
