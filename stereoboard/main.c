@@ -56,7 +56,6 @@
 
 // include functions headers
 #include "distance_matrix.h"
-#include "edgeflow.h"
 #include "droplet_algorithm.h"
 #include "stereo_vision.h"
 #include "window_detection.h"
@@ -93,7 +92,7 @@ uint16_t offset_crop = 0;
  */
 
 /* Private functions ---------------------------------------------------------*/
-typedef enum {SEND_TURN_COMMANDS, SEND_COMMANDS, SEND_IMAGE, SEND_DISPARITY_MAP, SEND_FRAMERATE_STEREO, SEND_MATRIX, SEND_EDGEFLOW, SEND_IMAGE_AND_PROXIMITY, SEND_PROXIMITY_AND_ANGLE, SEND_WINDOW, SEND_HISTOGRAM, SEND_DELFLY_CORRIDOR, SEND_FOLLOW_YOU, SEND_SINGLE_DISTANCE, DISPARITY_BASED_VELOCITY, STEREO_VELOCITY, SEND_ROTATIONS, SEND_LEARNING_COLLISIONS,
+typedef enum {SEND_TURN_COMMANDS, SEND_COMMANDS, SEND_IMAGE, SEND_DISPARITY_MAP, SEND_FRAMERATE_STEREO, SEND_MATRIX, SEND_IMAGE_AND_PROXIMITY, SEND_PROXIMITY_AND_ANGLE, SEND_WINDOW, SEND_HISTOGRAM, SEND_DELFLY_CORRIDOR, SEND_FOLLOW_YOU, SEND_SINGLE_DISTANCE, DISPARITY_BASED_VELOCITY, STEREO_VELOCITY, SEND_ROTATIONS, SEND_LEARNING_COLLISIONS,
               SEND_MEANSHIFT, SEND_VL6180, DRONERACE, SEND_NONE
              } stereoboard_algorithm_type;
 
@@ -111,8 +110,6 @@ stereoboard_algorithm_type getBoardFunction(void)
   return SEND_DISPARITY_MAP;
 #elif defined(SEND_MATRIX)
   return SEND_MATRIX;
-#elif defined(SEND_EDGEFLOW)
-  return SEND_EDGEFLOW;
 #elif defined(SEND_WINDOW)
   return SEND_WINDOW;
 #elif defined(SEND_HISTOGRAM)
@@ -189,6 +186,8 @@ struct image_t disparity_image = {
   .type = IMAGE_GRAYSCALE,
   .pprz_ts = 0
 };
+
+uint8_t sendstereo_msg[22]={0};
 
 // Timing counters
 uint32_t freq_counter = 0;
@@ -383,9 +382,6 @@ int main(void)
   uint8_t maxDispFound = 0;
   int disparity_velocity_step = 0;
 
-  // initialize edgeflow
-  edgeflow_init(IMAGE_WIDTH, IMAGE_HEIGHT, USE_MONOCAM, &cam_state);
-// led_clear();
 
   // main loop
   while (1) {
@@ -687,11 +683,6 @@ int main(void)
 #ifdef LED_TOGGLE
       led_toggle();
 #endif
-      if (current_stereoboard_algorithm == SEND_EDGEFLOW || current_stereoboard_algorithm == STEREO_VELOCITY) {
-        // calculate the edge flow
-        edgeflow_total((uint8_t *)current_image_pair.buf, current_image_pair.pprz_ts);
-      }
-
       // compute and send window detection parameters
       if (current_stereoboard_algorithm == SEND_WINDOW) {
         // XPOS, YPOS, RESPONSE, DISP_SUM, DISP_HOR, DISP_VERT
@@ -856,26 +847,23 @@ int main(void)
 #endif
 
       if (current_stereoboard_algorithm == STEREO_VELOCITY) {
-        edgeflow_msg[4] = maxDispFound;
+        sendstereo_msg[4] = maxDispFound;
         int disparities_high =  evaluate_disparities_droplet((uint8_t *)disparity_image.buf, image_width, image_height, 80);
         if (disparities_high > 200) {
-          edgeflow_msg[5] = 200;
+          sendstereo_msg[5] = 200;
         } else {
-          edgeflow_msg[5] = (uint8_t)disparities_high;
+          sendstereo_msg[5] = (uint8_t)disparities_high;
         }
-        edgeflow_msg[6] = (uint8_t)(processed_pixels / 100);
-        edgeflow_msg[10] = avg_disp_left;
-        edgeflow_msg[11] = avg_disp_right;
+        sendstereo_msg[6] = (uint8_t)(processed_pixels / 100);
+        sendstereo_msg[10] = avg_disp_left;
+        sendstereo_msg[11] = avg_disp_right;
         led_clear();
         if (maxDispFound > 22) {
           led_set();
         }
-        SendArray(edgeflow_msg, 23, 1);
+        SendArray(sendstereo_msg, 23, 1);
       }
 
-      if (current_stereoboard_algorithm == SEND_EDGEFLOW) {
-        send_edgeflow();
-      }
       if (current_stereoboard_algorithm == SEND_COMMANDS || current_stereoboard_algorithm == SEND_FRAMERATE_STEREO) {
         SendCommand(toSendCommand);
       }
