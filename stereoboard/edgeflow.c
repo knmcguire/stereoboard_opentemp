@@ -20,11 +20,11 @@ using namespace std;
 /* define cam_state used */
 
 struct cam_state_t cam_state = {
-	.phi = 0,
-	.theta  = 0,
-	.psi = 0,
-	.alt = 0,
-	.us_timestamp = 0
+  .phi = 0,
+  .theta  = 0,
+  .psi = 0,
+  .alt = 0,
+  .us_timestamp = 0
 };
 
 /* define arm functions used */
@@ -223,13 +223,13 @@ void send_edgeflow(void)
   // Copy data in arrays with scaling
   int x;
   for (x = 0; x < 128; x++) {
-    edge_hist_int8[x] = bounduint8(edgeflow.edge_hist[current_frame_nr].x[x]/20);
-    edge_hist_prev_int8[x] = bounduint8(edgeflow.edge_hist[previous_frame_x].x[x]/20);
-    edge_hist_right_int8[x] = bounduint8(edgeflow.edge_hist_right[x]/20);
+    edge_hist_int8[x] = bounduint8(edgeflow.edge_hist[current_frame_nr].x[x] / 20);
+    edge_hist_prev_int8[x] = bounduint8(edgeflow.edge_hist[previous_frame_x].x[x] / 20);
+    edge_hist_right_int8[x] = bounduint8(edgeflow.edge_hist_right[x] / 20);
     disp_stereo_int8[x] = bounduint8((edgeflow.disp.stereo[x] / 10));
-    disp_x_int8[x] = bounduint8((edgeflow.disp.x[x] /10 + 127));
+    disp_x_int8[x] = bounduint8((edgeflow.disp.x[x] / 10 + 127));
     vel_slope[x] = bounduint8((edgeflow.vel.x * (128 * 100 / 104)
-                              + edgeflow.vel.z * (x - 64)) / 100 + 127);
+                               + edgeflow.vel.z * (x - 64)) / 100 + 127);
   }
 
   // Copy all the debug arrays into a debug message
