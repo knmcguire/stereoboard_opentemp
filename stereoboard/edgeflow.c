@@ -17,6 +17,16 @@
 #define FOVY 0.776672   // 44.5deg = 0.776672 rad
 using namespace std;
 
+/* define cam_state used */
+
+struct cam_state_t cam_state = {
+	.phi = 0,
+	.theta  = 0,
+	.psi = 0,
+	.alt = 0,
+	.us_timestamp = 0
+};
+
 /* define arm functions used */
 void arm_fill_q31(int32_t val, int32_t *array, uint32_t size)
 {
@@ -213,12 +223,12 @@ void send_edgeflow(void)
   // Copy data in arrays with scaling
   int x;
   for (x = 0; x < 128; x++) {
-    edge_hist_int8[x] = boundint8(edgeflow.edge_hist[current_frame_nr].x[x]);
-    edge_hist_prev_int8[x] = boundint8(edgeflow.edge_hist[previous_frame_x].x[x]);
-    edge_hist_right_int8[x] = boundint8(edgeflow.edge_hist_right[x]);
-    disp_stereo_int8[x] = boundint8((edgeflow.disp.stereo[x] * 10 + 127));
-    disp_x_int8[x] = boundint8((edgeflow.disp.x[x] * 20 + 127));
-    vel_slope[x] = boundint8((edgeflow.vel.x * (128 * 100 / 104)
+    edge_hist_int8[x] = bounduint8(edgeflow.edge_hist[current_frame_nr].x[x]/20);
+    edge_hist_prev_int8[x] = bounduint8(edgeflow.edge_hist[previous_frame_x].x[x]/20);
+    edge_hist_right_int8[x] = bounduint8(edgeflow.edge_hist_right[x]/20);
+    disp_stereo_int8[x] = bounduint8((edgeflow.disp.stereo[x] / 10));
+    disp_x_int8[x] = bounduint8((edgeflow.disp.x[x] /10 + 127));
+    vel_slope[x] = bounduint8((edgeflow.vel.x * (128 * 100 / 104)
                               + edgeflow.vel.z * (x - 64)) / 100 + 127);
   }
 
