@@ -47,11 +47,13 @@ while True:
                 continue
 
             debug_array = stereoboard_tools.fill_image_array(sync1,oneImage, lineLength, lineCount)
-            print(debug_array)
+            #print(debug_array)
             debug_array=np.array(debug_array)
             debug_array_t = np.transpose(debug_array)
 
+            print("size array", len(debug_array_t),len(debug_array_t[0]))
 
+	    # Get debug arrays
             edge_hist_int8 = debug_array_t[:,0]
             edge_hist_prev_int8 = debug_array_t[:,1]
             edge_hist_right_int8 = debug_array_t[:,2]
@@ -59,9 +61,7 @@ while True:
             disp_x_int8 = debug_array_t[:,4]
             vel_slope = debug_array_t[:,5]
 
-
-
-            
+	    # Plot edge histograms            
 	    plt.figure(1)
             plt.cla()
 	    plt.axis([0,128, 0 , 255])
@@ -70,6 +70,7 @@ while True:
             plt.plot(edge_hist_right_int8,label= "edge_hist_right_int8")
             plt.legend()
 
+            # Plot displacements and velocity slope
 	    plt.figure(2)
             plt.cla()
 	    plt.axis([0,128, 0 , 255])

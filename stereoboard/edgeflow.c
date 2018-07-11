@@ -195,46 +195,51 @@ void send_edgeflow(void)
    For debugging, intermediate results are necessary to simplify the programming
    When EDGEFLOW_DEBUG is defined, it will send through the current histogram, the previous and the calculated displacement
    when it is not defined, it will send through flow, divergence and velocity*/
-  static uint8_t edgeflow_debug_msg[128 * 5] = {0};
-  uint8_t *current_frame_nr = &edgeflow->current_frame_nr;
-  uint8_t *previous_frame_offset = &edgeflow->previous_frame_offset;
+  uint8_t current_frame_nr = edgeflow.current_frame_nr;
+  uint8_t previous_frame_offset = edgeflow.prev_frame_offset_x;
 
-  uint8_t previous_frame_x = (*current_frame_nr - previous_frame_offset[0] + MAX_HORIZON) %
+  uint8_t previous_frame_x = (current_frame_nr - previous_frame_offset + MAX_HORIZON) %
                              MAX_HORIZON; // wrap index
 
-  uint8_t x = 0;
-  uint8_t edge_hist_int8[128];
-  uint8_t edge_hist_prev_int8[128];
-  uint8_t displacement_int8[128];
-  uint8_t plot2[128];
-  uint8_t plot3[128];
+  // Arrays for storing the debug information
+  uint8_t edge_hist_int8[128]; // Current edge histogram
+  uint8_t edge_hist_prev_int8[128]; // Previous edge histogram
+  uint8_t edge_hist_right_int8[128]; // Edge histogram right side (stereocamera)
+  uint8_t disp_stereo_int8[128]; // Displacement of right and left edge histogram
+  uint8_t disp_x_int8[128]; // Displacement of left edge histogram in time (x direction)
+  uint8_t vel_slope[128]; // The velocity slope
+
+
+  // Copy data in arrays with scaling
+  int x;
   for (x = 0; x < 128; x++) {
-
-    plot3[x] = boundint8((edgeflow->displacement.stereo[x] * 10 + 127));
-
-    plot2[x] = boundint8((edgeflow->displacement.x[x] * 20 + 127));
-    edge_hist_int8[x] = boundint8((edgeflow->vel_per_column[x] / 100 + 127));
-    displacement_int8[x] = boundint8((edgeflow->stereo_distance_per_column[x] / 10  + 127));
-
-    edge_hist_prev_int8[x] = boundint8((edgeflow->vel.x * (128 * 100 / 104)
-                                        + edgeflow->vel.z * (x - 64)) / 100 + 127);
-
+    edge_hist_int8[x] = boundint8(edgeflow.edge_hist[current_frame_nr].x[x]);
+    edge_hist_prev_int8[x] = boundint8(edgeflow.edge_hist[previous_frame_x].x[x]);
+    edge_hist_right_int8[x] = boundint8(edgeflow.edge_hist_right[x]);
+    disp_stereo_int8[x] = boundint8((edgeflow.disp.stereo[x] * 10 + 127));
+    disp_x_int8[x] = boundint8((edgeflow.disp.x[x] * 20 + 127));
+    vel_slope[x] = boundint8((edgeflow.vel.x * (128 * 100 / 104)
+                              + edgeflow.vel.z * (x - 64)) / 100 + 127);
   }
 
-  memcpy(edgeflow_debug_msg, &edge_hist_int8, 128 * sizeof(uint8_t)); // copy quality measures to output array
-  memcpy(edgeflow_debug_msg + 128, &edge_hist_prev_int8,
-         128 * sizeof(uint8_t));// copy quality measures to output array
-  memcpy(edgeflow_debug_msg + 128 * 2, &displacement_int8,
-         128 * sizeof(uint8_t));// copy quality measures to output array
-  memcpy(edgeflow_debug_msg + 128 * 3, &plot2,
-         128 * sizeof(uint8_t));// copy quality measures to output array
-  memcpy(edgeflow_debug_msg + 128 * 4, &plot3,
-         128 * sizeof(uint8_t));// copy quality measures to output array
+  // Copy all the debug arrays into a debug message
+  static uint8_t edgeflow_debug_msg[128 * 6] = {0};
 
-  memcpy(edgeflow_msg, edgeflow_debug_msg, 128 * 5 * sizeof(uint8_t));
+  memcpy(edgeflow_debug_msg, &edge_hist_int8, 128 * sizeof(uint8_t));
+  memcpy(edgeflow_debug_msg + 128, &edge_hist_prev_int8,
+         128 * sizeof(uint8_t));
+  memcpy(edgeflow_debug_msg + 128 * 2, &edge_hist_right_int8,
+         128 * sizeof(uint8_t));
+  memcpy(edgeflow_debug_msg + 128 * 3, &disp_stereo_int8,
+         128 * sizeof(uint8_t));
+  memcpy(edgeflow_debug_msg + 128 * 4, &disp_x_int8,
+         128 * sizeof(uint8_t));
+  memcpy(edgeflow_debug_msg + 128 * 5, &vel_slope,
+         128 * sizeof(uint8_t));
 
 #ifndef COMPILE_ON_LINUX
-  SendArray(edgeflow_msg, 128, 5);
+  // Send debug array (preferably FTDI cable with pythonscript edgeflow_debug.py)
+  SendArray(edgeflow_debug_msg, 128, 6);
 #endif
 #elif defined(USE_PPRZLINK)
   uint8_t frame_freq = boundint8(edgeflow.hz.x / edgeflow_params.RES);
@@ -500,7 +505,7 @@ void calculate_snapshot_displacement(struct edgeflow_parameters_t *params, struc
 
   // solve fit
   snapshot->quality = bounduint8((int32_t)(params->RES * coupled_flow_fit(&(snapshot->disp), &(edgeflow->disp),
-                                          params->RES, scale_x, scale_y, params->img_w, params->img_h, border, &(snapshot->dist))));
+                                 params->RES, scale_x, scale_y, params->img_w, params->img_h, border, &(snapshot->dist))));
 
   // change axis system from left-top to centre-centre
   snapshot->dist.x += snapshot->dist.z * params->img_w / 2;

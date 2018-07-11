@@ -26,8 +26,7 @@ void run_project(void);
 
 #define DCMI_MODE DCMI_MODE_3
 
-#define USE_PPRZLINK 1
-
+#define EDGEFLOW_DEBUG
 //////////////////////////////////////////////////////
 // The default communication via UsartTx must be connected to a Usart
 // Stereoboard bottom = Usart1
