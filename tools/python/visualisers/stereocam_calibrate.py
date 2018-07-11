@@ -84,11 +84,11 @@ class Viewer:
                     
                     # first perform veritcal and horizontal shifts
                     if (self.x_offset > 0):
-                      rightImg = np.concatenate((np.zeros((self.h, self.x_offset), dtype="uint8"),rightImg), axis=1)
-                      leftImg = np.concatenate((leftImg, np.zeros((self.h, self.x_offset), dtype="uint8")), axis=1)
+                      rightImg = np.concatenate((np.zeros((int(self.h), self.x_offset), dtype="uint8"),rightImg), axis=1)
+                      leftImg = np.concatenate((leftImg, np.zeros((int(self.h), self.x_offset), dtype="uint8")), axis=1)
                     else:
-                      leftImg = np.concatenate((np.zeros((self.h, -self.x_offset), dtype="uint8"),leftImg), axis=1)
-                      rightImg = np.concatenate((rightImg, np.zeros((self.h, -self.x_offset), dtype="uint8")), axis=1)
+                      leftImg = np.concatenate((np.zeros((int(self.h), -self.x_offset), dtype="uint8"),leftImg), axis=1)
+                      rightImg = np.concatenate((rightImg, np.zeros((int(self.h), -self.x_offset), dtype="uint8")), axis=1)
                     if (self.y_offset > 0):
                       leftImg = np.concatenate((leftImg, np.zeros((self.y_offset,leftImg.shape[1]), dtype="uint8")), axis=0)
                       rightImg = np.concatenate((np.zeros((self.y_offset,rightImg.shape[1]), dtype="uint8"),rightImg), axis=0)
