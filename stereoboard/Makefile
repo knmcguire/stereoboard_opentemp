@@ -20,7 +20,7 @@ COMMONFLAGS = -mcpu=cortex-m4 -mthumb
 
 CFLAGS        = -g -O3 -mlittle-endian -DHSE_VALUE=12000000 -fvar-tracking -std=c99
 CFLAGS       += $(COMMONFLAGS) -DARM_MATH_CM4 -fsingle-precision-constant
-CFLAGS       += -ffreestanding -nostdlib
+CFLAGS       += -ffreestanding -nostartfiles
 
 ifeq ($(findstring .h,$(BOARD)), .h)
 	BOARD_PATH   = $(BOARD)
