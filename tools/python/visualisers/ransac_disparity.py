@@ -86,7 +86,7 @@ while True:
               ax.scatter3D(x, y, img[x,y], zdir='z', c= img[x,y])
 	      ax.set_xlim([0, 96])
 	      ax.set_ylim([0, 128])
-	      ax.set_zlim([0, 40])
+	      ax.set_zlim([0, 200])
 	      plt.draw()
     	      plt.pause(0.05)
 

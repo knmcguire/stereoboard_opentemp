@@ -15,7 +15,7 @@
 
 // Settings
 #define LED_TOGGLE
-#define STEREO_ALGORITHM 1 // 1 = Dense   0 = Sparse
+#define STEREO_ALGORITHM 0 // 1 = Dense   0 = Sparse
 
 //////////////////////////////////////////////////////
 // The default communication via UsartTx must be connected to a Usart
